@@ -1,0 +1,31 @@
+name: audio_streamer_example
+description: Demonstrates how to use the audio_streamer plugin.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+environment:
+  sdk: '>=3.0.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  audio_streamer:
+    path: ../
+  flutter_hooks: ^0.18.6
+  hooks_riverpod: ^2.3.6
+  permission_handler: ^10.2.0
+  audio_session: ^0.1.14
+  path_provider: ^2.0.15
+  audioplayers: ^4.0.1
+
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+
+flutter:
+  uses-material-design: true
