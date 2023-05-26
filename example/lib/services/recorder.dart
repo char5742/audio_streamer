@@ -5,12 +5,18 @@ import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:audio_streamer/audio_streamer.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_silero_vad/flutter_silero_vad.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class RecorderService {
   final recorder = AudioStreamer.instance;
+  final vad = FlutterSileroVad();
+  Future<String> get modelPath async =>
+      '${(await getApplicationSupportDirectory()).path}/silero_vad.onnx';
   final sampleRate = 16000;
+  final frameSize = 40; // 80ms
 
   /// サンプルあたりのビット数
   final int bitsPerSample = 16;
@@ -20,7 +26,8 @@ class RecorderService {
 
   bool isInited = false;
 
-  final audioDataBuffer = <int>[];
+  /// 直前の音声データを保存するための変数
+  final lastAudioData = <int>[];
 
   /// 発声が止まってから数秒後に音声データを保存するための変数
   DateTime? lastActiveTime;
@@ -52,6 +59,7 @@ class RecorderService {
       androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
       androidWillPauseWhenDucked: true,
     ));
+    await onnxModelToLocal();
     isInited = true;
   }
 
@@ -59,23 +67,32 @@ class RecorderService {
     assert(isInited);
 
     await recorder.startRecording();
+    vad.initialize(
+      modelPath: await modelPath,
+      sampleRate: sampleRate,
+      frameSize: frameSize,
+      threshold: 0.7,
+      minSilenceDurationMs: 0,
+      speechPadMs: 0,
+    );
     recordingDataSubscription = recorder.audioStream.listen((buffer) {
-      _handleProcessedAudio(buffer);
       final data = _transformBuffer(buffer);
+      if (data.isEmpty) return;
+      _handleProcessedAudio(buffer);
       controller.add(data);
     });
 
     processedAudioSubscription =
         processedAudioStreamController.stream.listen((buffer) async {
-      print('saved');
-      String outputPath =
-          '${(await getExternalStorageDirectory())!.path}/output.wav';
+      String outputPath = '${(await getTemporaryDirectory()).path}/output.wav';
       saveAsWav(buffer, outputPath);
+      print('saved');
     });
   }
 
   Future<void> stopRecorder() async {
     await recorder.startRecording();
+    vad.dispose();
     if (recordingDataSubscription != null) {
       await recordingDataSubscription?.cancel();
       recordingDataSubscription = null;
@@ -91,7 +108,6 @@ class RecorderService {
   }
 
   void printVolume(List<int> data) {
-    if (data.isEmpty) return;
     // PCMデータは16ビット（2バイト）なので、2バイト単位で処理します。
     double sum = 0;
     for (var i = 0; i < data.length; i += 2) {
@@ -107,16 +123,16 @@ class RecorderService {
   }
 
   static const threshold = 900; // このしきい値は音声レベルにより調整が必要
-  static const bufferTimeInMilliseconds = 1000;
+  static const bufferTimeInMilliseconds = 700;
+  final audioDataBuffer = <int>[];
 
   void _handleProcessedAudio(List<int> buffer) {
     final transformedBuffer = _transformBuffer(buffer);
-    final volume =
-        transformedBuffer.map((e) => e.abs()).reduce((a, b) => a + b) /
-            transformedBuffer.length;
-
-    if (volume > threshold) {
+    final isActivated = vad.predict(transformedBuffer);
+    if (isActivated) {
       lastActiveTime = DateTime.now();
+      audioDataBuffer.addAll(lastAudioData);
+      lastAudioData.clear();
       audioDataBuffer.addAll(buffer);
     } else if (lastActiveTime != null) {
       audioDataBuffer.addAll(buffer);
@@ -127,6 +143,13 @@ class RecorderService {
         processedAudioStreamController.add([...audioDataBuffer]);
         audioDataBuffer.clear();
         lastActiveTime = null;
+      }
+    } else {
+      lastAudioData.addAll(buffer);
+      // 5秒分のデータを保存しておく
+      final threshold = sampleRate * 500 ~/ 1000;
+      if (lastAudioData.length > threshold) {
+        lastAudioData.removeRange(0, lastAudioData.length - threshold);
       }
     }
   }
@@ -177,5 +200,13 @@ class RecorderService {
 
     final File wavFile = File(filePath);
     wavFile.writeAsBytesSync(wavHeader.buffer.asUint8List() + pcmBytes);
+  }
+
+  /// アセットからアプリケーションディレクトリにファイルをコピーする
+  Future<void> onnxModelToLocal() async {
+    final data = await rootBundle.load('assets/silero_vad.onnx');
+    final bytes =
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    File(await modelPath).writeAsBytesSync(bytes);
   }
 }

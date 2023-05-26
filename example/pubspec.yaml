@@ -17,6 +17,9 @@ dependencies:
   audio_session: ^0.1.14
   path_provider: ^2.0.15
   audioplayers: ^4.0.1
+  flutter_silero_vad:
+    git:
+      url: https://github.com/char5742/flutter_silero_vad.git
 
 dev_dependencies:
   integration_test:
@@ -29,3 +32,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+      - assets/silero_vad.onnx

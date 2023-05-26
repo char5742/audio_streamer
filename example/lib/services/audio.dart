@@ -5,19 +5,14 @@ class AudioService {
   final player = AudioPlayer()
     ..setAudioContext(
       const AudioContext(
-        android:
-            AudioContextAndroid(audioMode: AndroidAudioMode.inCommunication),
-        iOS: AudioContextIOS(options: [
-          AVAudioSessionOptions.allowBluetooth,
-          AVAudioSessionOptions.allowBluetoothA2DP,
-          AVAudioSessionOptions.defaultToSpeaker,
-        ]),
+        android: AudioContextAndroid(
+          audioMode: AndroidAudioMode.inCommunication
+        ),
       ),
     );
 
   Future<void> play() async {
-    String outputPath =
-        '${(await getExternalStorageDirectory())!.path}/output.wav';
+    String outputPath = '${(await getTemporaryDirectory()).path}/output.wav';
     await player.setSourceDeviceFile(outputPath);
     await player.resume();
   }
