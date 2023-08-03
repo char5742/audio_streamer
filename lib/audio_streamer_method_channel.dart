@@ -7,9 +7,10 @@ import 'audio_streamer_platform_interface.dart';
 class MethodChannelAudioStreamer extends AudioStreamerPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('com.example.audio_streamer/methods');
-@visibleForTesting
-  final eventChannel = const       EventChannel('com.example.audio_streamer/events');
+  final methodChannel =
+      const MethodChannel('com.example.audio_streamer/methods');
+  @visibleForTesting
+  final eventChannel = const EventChannel('com.example.audio_streamer/events');
   @override
   Stream<List<int>> get audioStream {
     return eventChannel.receiveBroadcastStream().map((event) {
@@ -17,11 +18,12 @@ class MethodChannelAudioStreamer extends AudioStreamerPlatform {
     });
   }
 
-@override
+  @override
   Future<void> startRecording() async {
     await methodChannel.invokeMethod<void>('startRecording');
   }
-@override
+
+  @override
   Future<void> stopRecording() async {
     await methodChannel.invokeMethod<void>('stopRecording');
   }
