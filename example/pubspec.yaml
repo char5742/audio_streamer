@@ -1,9 +1,9 @@
 name: audio_streamer_example
 description: Demonstrates how to use the audio_streamer plugin.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: '>=3.0.1 <4.0.0'
+  sdk: ">=3.0.1 <4.0.0"
 
 dependencies:
   flutter:
@@ -29,8 +29,7 @@ dev_dependencies:
 
   flutter_lints: ^2.0.0
 
-
 flutter:
   uses-material-design: true
   assets:
-      - assets/silero_vad.onnx
+    - assets/silero_vad.onnx

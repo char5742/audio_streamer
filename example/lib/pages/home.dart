@@ -36,10 +36,11 @@ class HomePage extends HookConsumerWidget {
         children: [
           Waveform(audioData: spots.value),
           ElevatedButton(
-            onPressed: () {
-              ref.read(audioServiceProvider).play();
+            onPressed: () async {
+              await ref.read(audioServiceProvider).play();
+              ref.read(recoderProvider).vad.resetState();
             },
-            child: Text("Start"),
+            child: const Text("Start"),
           )
         ],
       ),

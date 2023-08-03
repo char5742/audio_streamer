@@ -35,6 +35,8 @@ class RecorderService {
   StreamSubscription<List<int>>? recordingDataSubscription;
   StreamSubscription<List<int>>? processedAudioSubscription;
 
+  final frameBuffer = <int>[];
+
   Future<void> init() async {
     var status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
@@ -59,7 +61,6 @@ class RecorderService {
       androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
       androidWillPauseWhenDucked: true,
     ));
-    await onnxModelToLocal();
     isInited = true;
   }
 
@@ -67,18 +68,24 @@ class RecorderService {
     assert(isInited);
 
     await recorder.startRecording();
-    vad.initialize(
+    await onnxModelToLocal();
+    await vad.initialize(
       modelPath: await modelPath,
       sampleRate: sampleRate,
       frameSize: frameSize,
       threshold: 0.7,
-      minSilenceDurationMs: 0,
+      minSilenceDurationMs: 100,
       speechPadMs: 0,
     );
-    recordingDataSubscription = recorder.audioStream.listen((buffer) {
+    recordingDataSubscription = recorder.audioStream.listen((buffer) async {
       final data = _transformBuffer(buffer);
       if (data.isEmpty) return;
-      _handleProcessedAudio(buffer);
+      frameBuffer.addAll(buffer);
+      while (frameBuffer.length >= frameSize * 2 * sampleRate ~/ 1000) {
+        final b = frameBuffer.take(frameSize * 2 * sampleRate ~/ 1000).toList();
+        frameBuffer.removeRange(0, frameSize * 2 * sampleRate ~/ 1000);
+        await _handleProcessedAudio(b);
+      }
       controller.add(data);
     });
 
@@ -92,14 +99,12 @@ class RecorderService {
 
   Future<void> stopRecorder() async {
     await recorder.startRecording();
-    vad.dispose();
     if (recordingDataSubscription != null) {
       await recordingDataSubscription?.cancel();
       recordingDataSubscription = null;
       await processedAudioSubscription?.cancel();
       processedAudioSubscription = null;
     }
-    // _mplaybackReady = true;
   }
 
   Int16List _transformBuffer(List<int> buffer) {
@@ -126,10 +131,15 @@ class RecorderService {
   static const bufferTimeInMilliseconds = 700;
   final audioDataBuffer = <int>[];
 
-  void _handleProcessedAudio(List<int> buffer) {
+  Future<void> _handleProcessedAudio(List<int> buffer) async {
     final transformedBuffer = _transformBuffer(buffer);
-    final isActivated = vad.predict(transformedBuffer);
-    if (isActivated) {
+    final transformedBufferFloat =
+        transformedBuffer.map((e) => e / 32768).toList();
+
+    final isActivated =
+        await vad.predict(Float32List.fromList(transformedBufferFloat));
+    print(isActivated);
+    if (isActivated == true) {
       lastActiveTime = DateTime.now();
       audioDataBuffer.addAll(lastAudioData);
       lastAudioData.clear();
