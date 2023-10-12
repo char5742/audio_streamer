@@ -63,7 +63,7 @@ public class AudioStreamerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler 
     let mixer = AVAudioMixerNode()
     audioEngine.attach(mixer)
     audioEngine.connect(inputNode, to: mixer, format: inputFormat)
-    mixer.outputVolume = 50.0
+    mixer.outputVolume = 1.0
     let format16K = AVAudioFormat(
       commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1,
       interleaved: true)!
