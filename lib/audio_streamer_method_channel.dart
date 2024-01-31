@@ -19,8 +19,10 @@ class MethodChannelAudioStreamer extends AudioStreamerPlatform {
   }
 
   @override
-  Future<void> startRecording() async {
-    await methodChannel.invokeMethod<void>('startRecording');
+  Future<void> startRecording(int recordingMode) async {
+    await methodChannel.invokeMethod<void>('startRecording', {
+      'recordingMode': recordingMode,
+    });
   }
 
   @override

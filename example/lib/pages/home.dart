@@ -13,9 +13,10 @@ class HomePage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = useStreamController<List<int>>();
     final spots = useState<List<int>>([]);
+    final echoCancellation = useState<bool>(false);
     useOnAppLifecycleStateChange((beforeState, currState) {
       if (currState == AppLifecycleState.resumed) {
-        ref.read(recoderProvider).record(controller);
+        ref.read(recoderProvider).record(controller, echoCancellation.value);
       } else if (currState == AppLifecycleState.paused) {
         ref.read(recoderProvider).stopRecorder();
       }
@@ -35,12 +36,26 @@ class HomePage extends HookConsumerWidget {
       body: Column(
         children: [
           Waveform(audioData: spots.value),
+          IconButton(
+            onPressed: () async {
+              echoCancellation.value = !echoCancellation.value;
+              await ref.read(recoderProvider).stopRecorder();
+              await ref
+                  .read(recoderProvider)
+                  .record(controller, echoCancellation.value);
+            },
+            icon: Icon(
+              Icons.power_settings_new,
+              color: echoCancellation.value ? Colors.green : Colors.black,
+              size: 64,
+            ),
+          ),
+          const SizedBox(height: 48),
           ElevatedButton(
             onPressed: () async {
               await ref.read(audioServiceProvider).play();
-              ref.read(recoderProvider).vad.resetState();
             },
-            child: const Text("Start"),
+            child: const Text("play"),
           )
         ],
       ),

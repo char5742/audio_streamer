@@ -37,21 +37,18 @@ class AudioStreamerPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodCal
 
   override fun onListen(arguments: Any?, eventSink: EventChannel.EventSink) {
     this.eventSink = eventSink
-    executor.execute {
-      startRecording()
-    }
   }
 
   override fun onCancel(arguments: Any?) {
     eventSink = null
   }
 
-  private fun startRecording() {
+  private fun startRecording(recordingMode: Int) {
     val sampleRate = 16000
     val channelConfig = AudioFormat.CHANNEL_IN_MONO
     val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     val minBufSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
-    val audioRecord = AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, sampleRate, channelConfig, audioFormat, minBufSize)
+    val audioRecord = AudioRecord(recordingMode, sampleRate, channelConfig, audioFormat, minBufSize)
     var acousticEchoCanceler: AcousticEchoCanceler? = null
     // Initialize AcousticEchoCanceler for the AudioRecord instance
     if (AcousticEchoCanceler.isAvailable()) {
@@ -81,7 +78,12 @@ class AudioStreamerPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodCal
         when (call.method) {
             "startRecording" -> {
                 executor.execute {
-                    startRecording()
+                    startRecording(
+                      // Recording mode.
+                      // If you want to echo cancellation, you should use VOICE_COMMUNICATION.
+                      // see https://developer.android.com/reference/android/media/MediaRecorder.AudioSource
+                      call.argument<Int>("recordingMode") ?: MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                    )
                 }
                 result.success(null)
             }
