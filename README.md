@@ -1,3 +1,3 @@
 # audio_streamer
 
-デバイスのマイクからストリーミングで音声データを取得するためのプラグイン
+Plugin for capturing streaming audio data from a device's microphone with echo cancellation.

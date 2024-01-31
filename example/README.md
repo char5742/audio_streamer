@@ -1,9 +1,8 @@
 # audio_streamer_example
 
-audio_streamerプラグインの実装例です。
+This is an implementation example of the audio_streamer plugin.
 
-音声エネルギーによるシンプルなvoice activity detectionにより、発声区間の音声データを入手しています。  
-画面のグラフはデバイスのマイクから受け取った音声バッファーです。startボタンを押すと入手した音声データを再生します。  
-AndroidのAcousticEchoCancelerにより、入手した音声データは検出されません。
+The graph displayed on the screen represents the audio buffer received from the device's microphone. The power button becomes active when echo cancellation is enabled. You can play sounds from local files to test echo cancellation.
 
-<img src="screenshot/sample1.png" width="320px"/>
+
+<img src="screenshot/sample.jpeg" width="320px"/>
