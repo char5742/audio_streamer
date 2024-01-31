@@ -47,5 +47,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used to test echo cancellation</string>
+	<key>NSAppleMusicUsageDescription</key>
+<string>Explain why your app uses music</string>
 </dict>
 </plist>
